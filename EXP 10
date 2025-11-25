@@ -1,0 +1,65 @@
+import numpy as np
+
+class KMeans:
+    def __init__(self, k=3, max_iters=100):
+        self.k = k
+        self.max_iters = max_iters
+        self.centroids = None
+
+    def fit(self, X):
+        n_samples, n_features = X.shape
+
+        # Randomly initialize centroids from the data points
+        random_indices = np.random.choice(n_samples, self.k, replace=False)
+        self.centroids = X[random_indices]
+
+        for _ in range(self.max_iters):
+            # Assign clusters
+            clusters = self._create_clusters(X)
+
+            # Compute new centroids
+            new_centroids = np.zeros((self.k, n_features))
+            for idx, cluster in enumerate(clusters):
+                new_centroids[idx] = np.mean(X[cluster], axis=0)
+
+            # Check convergence
+            if np.allclose(self.centroids, new_centroids):
+                break
+
+            self.centroids = new_centroids
+
+    def _create_clusters(self, X):
+        clusters = [[] for _ in range(self.k)]
+
+        for idx, point in enumerate(X):
+            centroid_idx = self._closest_centroid(point)
+            clusters[centroid_idx].append(idx)
+
+        return clusters
+
+    def _closest_centroid(self, point):
+        distances = np.sqrt(np.sum((self.centroids - point)**2, axis=1))
+        return np.argmin(distances)
+
+    def predict(self, X):
+        return [self._closest_centroid(point) for point in X]
+
+
+# -----------------------------
+# Example Usage
+# -----------------------------
+if __name__ == "__main__":
+    from sklearn.datasets import make_blobs
+
+    # Create synthetic dataset
+    X, y = make_blobs(n_samples=300, centers=3, n_features=2, cluster_std=0.6, random_state=42)
+
+    model = KMeans(k=3, max_iters=100)
+    model.fit(X)
+    labels = model.predict(X)
+
+    print("Cluster centroids:")
+    print(model.centroids)
+
+    print("Cluster assignments (first 20):")
+    print(labels[:20])
